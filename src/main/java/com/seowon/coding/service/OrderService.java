@@ -22,7 +22,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional
 public class OrderService {
-    
+
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final ProcessingStatusRepository processingStatusRepository;
@@ -31,12 +31,12 @@ public class OrderService {
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
-    
+
     @Transactional(readOnly = true)
     public Optional<Order> getOrderById(Long id) {
         return orderRepository.findById(id);
     }
-    
+
 
     public Order updateOrder(Long id, Order order) {
         if (!orderRepository.existsById(id)) {
@@ -45,7 +45,7 @@ public class OrderService {
         order.setId(id);
         return orderRepository.save(order);
     }
-    
+
     public void deleteOrder(Long id) {
         if (!orderRepository.existsById(id)) {
             throw new RuntimeException("Order not found with id: " + id);
@@ -65,7 +65,28 @@ public class OrderService {
      * placeOrder 메소드의 시그니처는 변경하지 않은 채 구현하세요.
      */
     public Order placeOrder(String customerName, String customerEmail, List<Long> productIds, List<Integer> quantities) {
-        return null;
+        Order order = Order.builder()
+                .customerName(customerName)
+                .customerEmail(customerEmail).build();
+        for (int i = 0; i < productIds.size(); i++) {
+            Product product = productRepository.findById(productIds.get(i))
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+            int quantity = quantities.get(i);
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(product)
+                    .quantity(quantity)
+                    .price(product.getPrice())
+                    .build();
+            order.addItem(orderItem);
+            product.decreaseStock(quantity);
+        }
+        order.setStatus(Order.OrderStatus.PENDING);
+        order.setOrderDate(LocalDateTime.now());
+
+        orderRepository.save(order);
+        return order;
     }
 
     /**
