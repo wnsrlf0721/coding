@@ -1,6 +1,7 @@
 package com.seowon.coding.controller;
 
 import com.seowon.coding.domain.model.Order;
+import com.seowon.coding.service.OrderProduct;
 import com.seowon.coding.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,14 +14,14 @@ import java.util.List;
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
-    
+
     private final OrderService orderService;
-    
+
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
         return orderService.getOrderById(id)
@@ -37,7 +38,7 @@ public class OrderController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
         try {
@@ -47,7 +48,7 @@ public class OrderController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     /**
      * TODO #2: 주문을 생성하는 API 구현
      * 구현목록:
@@ -55,7 +56,7 @@ public class OrderController {
      * 2. orderService.placeOrder 호출
      * 3. 주문 생성시 HTTP 201 CREATED 반환
      * 4. 필요한 DTO 생성
-     * 
+     * <p>
      * Request body 예시:
      * {
      *   "customerName": "John Doe",
@@ -66,5 +67,11 @@ public class OrderController {
      *   ]
      * }
      */
-    //
+    public ResponseEntity<Order> createOrder(@RequestBody Order order, @RequestBody List<OrderProduct> products) {
+        List<Long> productId = products.stream().map(OrderProduct::getProductId).toList();
+        List<Integer> quantity = products.stream().map(OrderProduct::getQuantity).toList();
+
+        Order createdOrder = orderService.placeOrder(order.getCustomerName(), order.getCustomerEmail(), productId, quantity);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
+    }
 }
